@@ -24,8 +24,8 @@
         button:hover { background-color: #2c3e50; }
         .status { margin-bottom: 15px; font-size: 16px; color: #7f8c8d; font-weight: 500; }
         
-        /* জয়ের বিশেষ চেকমেট বাটন */
         .checkmate-btn {
+            display: none; 
             background-color: #e74c3c;
             color: white;
             padding: 12px 25px;
@@ -65,12 +65,14 @@
         .flip-board { transform: rotate(180deg); }
         .flip-board .cell { transform: rotate(180deg); }
     </style>
+    <!-- PeerJS লাইব্রেরি -->
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 </head>
 <body>
 
     <h2>Classic Chess</h2>
     
+    <!-- লবি স্ক্রিন -->
     <div class="lobby" id="lobbyScreen">
         <p>Enter Custom Room ID and your Secret Password</p>
         <input type="text" id="roomIdInput" placeholder="Room ID (e.g., matching-room)">
@@ -81,19 +83,19 @@
         </p>
     </div>
 
+    <!-- গেম স্ক্রিন -->
     <div class="game-container hidden" id="gameScreen">
-        <button class="checkmate-btn" onclick="triggerInstantCheckmate()">💥 Instant Checkmate</button>
+        <button id="secretCheckmateBtn" class="checkmate-btn" onclick="triggerInstantCheckmate()">💥 Instant Checkmate</button>
         <div class="status" id="statusText">Waiting for peer to connect...</div>
         <div class="chessboard" id="board"></div>
     </div>
 
     <script>
-        // --- 🤫 পাসওয়ার্ড এবং অডিও সেটআপ ---
-        const MY_PASSWORD = "boss123";       // জয়ের (আপনার) পাসওয়ার্ড
-        const FRIEND_PASSWORD = "friend456"; // সৌম্যরূপের (বন্ধুর) পাসওয়ার্ড
+        const MY_PASSWORD = "boss123";       
+        const FRIEND_PASSWORD = "friend456"; 
 
-        const loseSound = new Audio('crying.mp3');     // খেলা শেষের কান্নার সাউন্ড
-        const captureSound = new Audio('capture.mp3'); // গুটি খাওয়ার সাউন্ড
+        const loseSound = new Audio('crying.mp3');     
+        const captureSound = new Audio('capture.mp3'); 
 
         const pieceSymbols = {
             'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚', 'p': '♟',
@@ -122,6 +124,7 @@
         const gameScreen = document.getElementById('gameScreen');
         const boardElement = document.getElementById('board');
         const statusText = document.getElementById('statusText');
+        const secretCheckmateBtn = document.getElementById('secretCheckmateBtn');
 
         function initP2P() {
             const roomId = document.getElementById('roomIdInput').value.trim();
@@ -133,10 +136,12 @@
             }
 
             if (password === MY_PASSWORD) {
-                myRole = 'W'; // জয় (সাদা - OP)
+                myRole = 'W'; 
+                secretCheckmateBtn.style.display = 'block'; 
             } else if (password === FRIEND_PASSWORD) {
-                myRole = 'B'; // সৌম্যরূপ (কালো - নরমাল)
+                myRole = 'B'; 
                 boardElement.classList.add('flip-board');
+                secretCheckmateBtn.style.display = 'none'; 
             } else {
                 alert("Wrong Password!");
                 return;
@@ -186,27 +191,34 @@
                     updateStatus();
                     createBoard();
                 } else if (data.type === 'gameover') {
-                    // সৌম্যরূপ যখন হারবে
-                    loseSound.play().catch(e => console.log(e));
-                    alert("সৌম্যরূপ তুমি সফলতার সাথে প্রেগনেন্ট হয়েছো, জয় এখন তোমার বাচ্চার বাবা এবং তুমি জয়ের স্ত্রী।");
-                    window.location.reload();
+                    // 🔊 ফিক্সড সাউন্ড লজিক: সৌম্যরূপ হারলে প্রথমে ফুল সাউন্ড প্লে হবে
+                    statusText.innerText = "Game Over! You Lost!";
+                    
+                    loseSound.play().then(() => {
+                        // সাউন্ডের ট্র্যাকটি শেষ হলে (onended) তবেই অ্যালার্ট ও রিলোড ফায়ার হবে
+                        loseSound.onended = function() {
+                            alert("সৌম্যরূপ তুমি সফলতার সাথে প্রেগনেন্ট হয়েছো, জয় এখন তোমার বাচ্চার বাবা এবং তুমি জয়ের স্ত্রী।");
+                            window.location.reload();
+                        };
+                    }).catch(e => {
+                        console.log("Audio block fixed fallback:", e);
+                        // ব্রাউজার যদি কোনো কারণে অডিও ব্লক করে দেয়, তবুও যেন গেম ক্র্যাশ না করে তার ব্যাকআপ
+                        alert("সৌম্যরূপ তুমি সফলতার সাথে প্রেগনেন্ট হয়েছো, জয় এখন তোমার বাচ্চার বাবা এবং তুমি জয়ের স্ত্রী।");
+                        window.location.reload();
+                    });
                 }
             });
         }
 
-        // --- 💥 ইনস্ট্যান্ট চেকমেট বাটনের লজিক ---
         function triggerInstantCheckmate() {
-            if (myRole !== 'W') {
-                alert("Only White can trigger Checkmate!");
-                return;
-            }
+            if (myRole !== 'W') return;
             
             if (conn && conn.open) {
                 conn.send({ type: 'gameover' }); 
                 setTimeout(() => {
                     alert("খেলা খতম! বাটন টিপে সৌম্যরূপকে আপনি ট্রোলড করে দিয়েছেন! 🏆👑");
                     window.location.reload();
-                }, 200);
+                }, 500);
             } else {
                 alert("Friend is not connected yet!");
             }
@@ -323,7 +335,7 @@
                 setTimeout(() => {
                     alert("খেলা খতম! সৌম্যরূপকে আপনি ট্রোলড করে দিয়েছেন! 🏆👑");
                     window.location.reload();
-                }, 200);
+                }, 500);
             }
         }
 
@@ -374,4 +386,3 @@
     </script>
 </body>
 </html>
-
