@@ -24,8 +24,9 @@
         button:hover { background-color: #2c3e50; }
         .status { margin-bottom: 15px; font-size: 16px; color: #7f8c8d; font-weight: 500; }
         
-        .checkmate-btn {
-            display: none; 
+        /* শুরুতেই বাটনটি সবার জন্য ফোর্স হাইড করা থাকবে */
+        #secretCheckmateBtn {
+            display: none !important; 
             background-color: #e74c3c;
             color: white;
             padding: 12px 25px;
@@ -36,7 +37,7 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             transition: background 0.2s;
         }
-        .checkmate-btn:hover {
+        #secretCheckmateBtn:hover {
             background-color: #c0392b;
         }
 
@@ -65,14 +66,12 @@
         .flip-board { transform: rotate(180deg); }
         .flip-board .cell { transform: rotate(180deg); }
     </style>
-    <!-- PeerJS লাইব্রেরি -->
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 </head>
 <body>
 
     <h2>Classic Chess</h2>
     
-    <!-- লবি স্ক্রিন -->
     <div class="lobby" id="lobbyScreen">
         <p>Enter Custom Room ID and your Secret Password</p>
         <input type="text" id="roomIdInput" placeholder="Room ID (e.g., matching-room)">
@@ -83,16 +82,15 @@
         </p>
     </div>
 
-    <!-- গেম স্ক্রিন -->
     <div class="game-container hidden" id="gameScreen">
-        <button id="secretCheckmateBtn" class="checkmate-btn" onclick="triggerInstantCheckmate()">💥 Instant Checkmate</button>
+        <button id="secretCheckmateBtn" onclick="triggerInstantCheckmate()">💥 Instant Checkmate</button>
         <div class="status" id="statusText">Waiting for peer to connect...</div>
         <div class="chessboard" id="board"></div>
     </div>
 
     <script>
-        const MY_PASSWORD = "boss123";       
-        const FRIEND_PASSWORD = "friend456"; 
+        const MY_PASSWORD = "boss123";       // জয়ের পাসওয়ার্ড
+        const FRIEND_PASSWORD = "friend456"; // সৌম্যরূপের পাসওয়ার্ড
 
         const loseSound = new Audio('crying.mp3');     
         const captureSound = new Audio('capture.mp3'); 
@@ -137,11 +135,11 @@
 
             if (password === MY_PASSWORD) {
                 myRole = 'W'; 
-                secretCheckmateBtn.style.display = 'block'; 
+                secretCheckmateBtn.setAttribute('style', 'display: block !important;'); // শুধু জয় বাটনটি দেখবে
             } else if (password === FRIEND_PASSWORD) {
                 myRole = 'B'; 
                 boardElement.classList.add('flip-board');
-                secretCheckmateBtn.style.display = 'none'; 
+                secretCheckmateBtn.setAttribute('style', 'display: none !important;'); // সৌম্যরূপের জন্য সম্পূর্ণ হাইড
             } else {
                 alert("Wrong Password!");
                 return;
@@ -191,18 +189,16 @@
                     updateStatus();
                     createBoard();
                 } else if (data.type === 'gameover') {
-                    // 🔊 ফিক্সড সাউন্ড লজিক: সৌম্যরূপ হারলে প্রথমে ফুল সাউন্ড প্লে হবে
                     statusText.innerText = "Game Over! You Lost!";
                     
-                    loseSound.play().then(() => {
-                        // সাউন্ডের ট্র্যাকটি শেষ হলে (onended) তবেই অ্যালার্ট ও রিলোড ফায়ার হবে
-                        loseSound.onended = function() {
-                            alert("সৌম্যরূপ তুমি সফলতার সাথে প্রেগনেন্ট হয়েছো, জয় এখন তোমার বাচ্চার বাবা এবং তুমি জয়ের স্ত্রী।");
-                            window.location.reload();
-                        };
-                    }).catch(e => {
-                        console.log("Audio block fixed fallback:", e);
-                        // ব্রাউজার যদি কোনো কারণে অডিও ব্লক করে দেয়, তবুও যেন গেম ক্র্যাশ না করে তার ব্যাকআপ
+                    // সৌম্যরূপের স্ক্রিনের জন্য ফিক্সড কান্নার সাউন্ড
+                    loseSound.addEventListener('ended', function() {
+                        alert("সৌম্যরূপ তুমি সফলতার সাথে প্রেগনেন্ট হয়েছো, জয় এখন তোমার বাচ্চার বাবা এবং তুমি জয়ের স্ত্রী।");
+                        window.location.reload();
+                    });
+
+                    loseSound.play().catch(e => {
+                        console.log("Audio play blocked by browser:", e);
                         alert("সৌম্যরূপ তুমি সফলতার সাথে প্রেগনেন্ট হয়েছো, জয় এখন তোমার বাচ্চার বাবা এবং তুমি জয়ের স্ত্রী।");
                         window.location.reload();
                     });
@@ -210,15 +206,28 @@
             });
         }
 
+        // --- 💥 জয়ের ইনস্ট্যান্ট চেকমেট বাটনের একদম নতুন ম্যাজিক লজিক ---
         function triggerInstantCheckmate() {
             if (myRole !== 'W') return;
             
             if (conn && conn.open) {
+                // ১. সৌম্যরূপের স্ক্রিনে সংকেত পাঠানো হলো
                 conn.send({ type: 'gameover' }); 
-                setTimeout(() => {
+                
+                statusText.innerText = "Checkmate Triggered! Playing sound...";
+
+                // ২. জয়ের (আপনার) নিজের ডিভাইসেও কান্নার সাউন্ড প্লে হবে
+                loseSound.addEventListener('ended', function() {
                     alert("খেলা খতম! বাটন টিপে সৌম্যরূপকে আপনি ট্রোলড করে দিয়েছেন! 🏆👑");
                     window.location.reload();
-                }, 500);
+                });
+
+                loseSound.play().catch(e => {
+                    console.log("Your audio play blocked:", e);
+                    alert("খেলা খতম! বাটন টিপে সৌম্যরূপকে আপনি ট্রোলড করে দিয়েছেন! 🏆👑");
+                    window.location.reload();
+                });
+
             } else {
                 alert("Friend is not connected yet!");
             }
@@ -330,12 +339,18 @@
             updateStatus();
             sendGameState(isCapture);
 
+            // যদি সাধারণ চাল দিয়েও আপনি কালো রাজাকে খেয়ে ফেলেন
             if (targetPiece === 'k') {
                 if (conn && conn.open) conn.send({ type: 'gameover' }); 
-                setTimeout(() => {
-                    alert("খেলা খতম! সৌম্যরূপকে আপনি ট্রোলড করে দিয়েছেন! 🏆👑");
+                
+                loseSound.addEventListener('ended', function() {
+                    alert("খেলা খতম! বাটন টিপে সৌম্যরূপকে আপনি ট্রোলড করে দিয়েছেন! 🏆👑");
                     window.location.reload();
-                }, 500);
+                });
+                loseSound.play().catch(e => {
+                    alert("খেলা খতম! বাটন টিপে সৌম্যরূপকে আপনি ট্রোলড করে দিয়েছেন! 🏆👑");
+                    window.location.reload();
+                });
             }
         }
 
@@ -386,3 +401,4 @@
     </script>
 </body>
 </html>
+
