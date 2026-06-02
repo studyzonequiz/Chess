@@ -3,365 +3,263 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Classic Chess</title>
+    <title>Ultimate Troll Chess</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            background-color: #f4f4f9;
+            background-color: #1a1a24;
+            color: #fff;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
+            user-select: none;
         }
-        h2 { color: #2c3e50; margin-bottom: 5px; }
-        .lobby, .game-container { display: flex; flex-direction: column; align-items: center; }
-        .hidden { display: none !important; }
-        input, button {
-            padding: 10px; margin: 5px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc;
-        }
-        button { background-color: #34495e; color: white; cursor: pointer; font-weight: bold; }
-        button:hover { background-color: #2c3e50; }
-        .status { margin-bottom: 15px; font-size: 16px; color: #7f8c8d; font-weight: 500; }
+        h2 { color: #f1c40f; margin-bottom: 5px; }
+        .game-container { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 450px; }
         
-        #secretCheckmateBtn {
-            display: none !important; 
-            background-color: #e74c3c;
-            color: white;
-            padding: 12px 25px;
-            font-size: 18px;
-            border: none;
+        #secretPanel {
+            background: #cd0000;
+            padding: 10px;
             border-radius: 8px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: background 0.2s;
+            margin-bottom: 12px;
+            text-align: center;
+            border: 2px solid #ff4747;
+            width: 100%;
+            box-sizing: border-box;
         }
-        #secretCheckmateBtn:hover { background-color: #c0392b; }
+        .toggle-btn { background-color: #e74c3c; margin: 5px; padding: 8px 12px; font-size: 13px; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;}
+        .toggle-btn.active { background-color: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
 
-        .chessboard {
+        .status { margin: 5px 0 12px 0; font-size: 16px; color: #f39c12; font-weight: bold; }
+
+        /* দাবা বোর্ড স্টাইল */
+        .chess-board {
             display: grid;
-            grid-template-columns: repeat(8, 60px);
-            grid-template-rows: repeat(8, 60px);
-            border: 4px solid #34495e;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            width: 100%;
+            max-width: 400px;
+            height: 400px;
+            border: 4px solid #3d2f1f;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
         }
-        .cell {
-            width: 60px; height: 60px; display: flex; justify-content: center;
-            align-items: center; font-size: 36px; cursor: pointer; user-select: none; position: relative;
+        .square {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            cursor: pointer;
         }
         .light { background-color: #f0d9b5; }
         .dark { background-color: #b58863; }
-        .selected { background-color: #7ab87d !important; }
-        
-        .suggested-dot {
-            width: 14px; height: 14px; background-color: rgba(46, 204, 113, 0.7);
-            border-radius: 50%; position: absolute; pointer-events: none;
-        }
-        .suggested-capture {
-            width: 48px; height: 48px; border: 4px solid rgba(46, 204, 113, 0.7);
-            border-radius: 50%; position: absolute; pointer-events: none;
-        }
-        .flip-board { transform: rotate(180deg); }
-        .flip-board .cell { transform: rotate(180deg); }
+        .selected { background-color: #7fffd4 !important; }
 
-        /* 👑 কাস্টম ট্রোল পপ-আপ স্ক্রিন (Modal) সিএসএস */
+        /* ট্রোল ওভারলে */
         .troll-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.85); display: flex; justify-content: center;
+            background-color: rgba(0, 0, 0, 0.9); display: flex; justify-content: center;
             align-items: center; z-index: 9999; opacity: 0; pointer-events: none;
             transition: opacity 0.4s ease;
         }
         .troll-overlay.show { opacity: 1; pointer-events: auto; }
         .troll-box {
-            background: white; padding: 35px; border-radius: 15px; text-align: center;
-            max-width: 500px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transform: scale(0.7); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: #fff; padding: 35px; border-radius: 15px; text-align: center;
+            max-width: 400px; width: 90%; color: #000;
         }
-        .troll-overlay.show .troll-box { transform: scale(1); }
-        .troll-headline { color: #e74c3c; font-size: 38px; font-weight: 900; margin: 0 0 15px 0; letter-spacing: 2px; }
-        .troll-message { color: #2c3e50; font-size: 18px; font-weight: 600; line-height: 1.6; margin-bottom: 25px; }
+        .troll-headline { color: #e74c3c; font-size: 30px; font-weight: bold; margin-bottom: 15px; }
+        .troll-message { font-size: 16px; margin-bottom: 25px; line-height: 1.5; }
         .troll-btn { background-color: #27ae60; color: white; border: none; padding: 12px 30px; font-size: 16px; font-weight: bold; border-radius: 5px; cursor: pointer; }
-        .troll-btn:hover { background-color: #219653; }
     </style>
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 </head>
 <body>
 
-    <h2>Classic Chess</h2>
+    <h2>Ultimate Troll Chess ♟️</h2>
     
-    <!-- লবি স্ক্রিন -->
-    <div class="lobby" id="lobbyScreen">
-        <p>Enter Custom Room ID and your Secret Password</p>
-        <input type="text" id="roomIdInput" placeholder="Room ID (e.g., matching-room)">
-        <input type="password" id="passwordInput" placeholder="Your Secret Password">
-        <button onclick="initP2P()">Connect & Play</button>
+    <div class="game-container">
+        <div id="secretPanel">
+            <div style="font-weight: bold; margin-bottom: 5px; color: yellow;">👑 BOSS CONTROL PANEL 👑</div>
+            <button class="toggle-btn" onclick="triggerInstantWin()">💥 Instant Win (Checkmate Soumyarup)</button>
+            <button class="toggle-btn" id="shuffleToggle" onclick="toggleShuffleMode()">🔀 Soumyarup Piece Shuffle: OFF</button>
+        </div>
+
+        <div class="status" id="statusText">Loading Turn...</div>
+        
+        <div class="chess-board" id="board"></div>
     </div>
 
-    <!-- গেম স্ক্রিন -->
-    <div class="game-container hidden" id="gameScreen">
-        <button id="secretCheckmateBtn" onclick="triggerInstantCheckmate()">💥 Instant Checkmate</button>
-        <div class="status" id="statusText">Waiting for peer to connect...</div>
-        <div class="chessboard" id="board"></div>
-    </div>
-
-    <!-- 🎭 কাস্টম পপ-আপ স্ট্রাকচার -->
     <div class="troll-overlay" id="trollOverlay">
         <div class="troll-box">
-            <div class="troll-headline" id="trollHeadline">CHECKMATE</div>
-            <div class="troll-message" id="trollMessage"></div>
-            <button class="troll-btn" onclick="window.location.reload()">OK</button>
+            <div class="troll-headline">CHECKMATE! 💀</div>
+            <div class="troll-message">CONGRATULATIONS 🎉 SOUMYARUP, JOY তোমাকে সফলতার সাথে প্রেগনেন্ট বানিয়েছে, এখন থেকে তুমি জয়ের বাচ্চার মা।</div>
+            <button class="troll-btn" onclick="window.location.reload()">Reset Game</button>
         </div>
     </div>
 
     <script>
-        const MY_PASSWORD = "boss123";       
-        const FRIEND_PASSWORD = "friend456"; 
-
-        const loseSound = new Audio('crying.mp3');     
-        const captureSound = new Audio('capture.mp3'); 
-
-        const pieceSymbols = {
+        const boardElement = document.getElementById('board');
+        const statusText = document.getElementById('statusText');
+        
+        // দাবার ঘুটির ইউনিকোড ক্যারেক্টারসমূহ
+        const pieces = {
             'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚', 'p': '♟',
-            'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔', 'P': '♙'
+            'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔', 'P': '♙',
+            '': ''
         };
 
+        // ইনিশিয়াল স্ট্যান্ডার্ড বোর্ড সেটআপ
         let boardState = [
             ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
             ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
             ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
             ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
         ];
 
-        let currentTurn = 'W'; 
-        let myRole = null; 
-        let peer = null;
-        let conn = null;
-        let selectedCell = null;
-        let validMoves = [];
+        // 🎲 নিয়ম ১: প্রথম চাল কে পাবে সেটা ১০০% র্যান্ডমলি ঠিক হবে (W = জয়, B = সৌম্যরূপ)
+        let currentTurn = Math.random() > 0.5 ? 'W' : 'B'; 
+        let myColor = 'W'; // জয়ের কালার সবসময় হোয়াইট (নিচের দিক)
+        let isShuffleModeActive = false;
+        let selectedSquare = null;
 
-        const lobbyScreen = document.getElementById('lobbyScreen');
-        const gameScreen = document.getElementById('gameScreen');
-        const boardElement = document.getElementById('board');
-        const statusText = document.getElementById('statusText');
-        const secretCheckmateBtn = document.getElementById('secretCheckmateBtn');
-        const trollOverlay = document.getElementById('trollOverlay');
-        const trollHeadline = document.getElementById('trollHeadline');
-        const trollMessage = document.getElementById('trollMessage');
-
-        function initP2P() {
-            const roomId = document.getElementById('roomIdInput').value.trim();
-            const password = document.getElementById('passwordInput').value.trim();
-
-            if (!roomId || !password) {
-                alert("Please fill in both fields!");
-                return;
-            }
-
-            if (password === MY_PASSWORD) {
-                myRole = 'W'; 
-                secretCheckmateBtn.setAttribute('style', 'display: block !important;'); 
-            } else if (password === FRIEND_PASSWORD) {
-                myRole = 'B'; 
-                boardElement.classList.add('flip-board');
-                secretCheckmateBtn.setAttribute('style', 'display: none !important;'); 
+        function toggleShuffleMode() {
+            isShuffleModeActive = !isMagicShieldActive; // আগের ভেরিয়েবল রিসেট
+            isShuffleModeActive = !isShuffleModeActive;
+            const btn = document.getElementById('shuffleToggle');
+            if (isShuffleModeActive) {
+                btn.innerText = "🔀 Soumyarup Piece Shuffle: ON";
+                btn.classList.add('active');
             } else {
-                alert("Wrong Password!");
-                return;
-            }
-
-            lobbyScreen.classList.add('hidden');
-            gameScreen.classList.remove('hidden');
-
-            const myPeerId = roomId + "_" + myRole;
-            const peerToConnect = roomId + "_" + (myRole === 'W' ? 'B' : 'W');
-
-            peer = new Peer(myPeerId);
-
-            peer.on('open', (id) => {
-                statusText.innerText = "Connecting to your friend...";
-                if (myRole === 'B') connectToPeer(peerToConnect);
-            });
-
-            peer.on('connection', (connection) => {
-                conn = connection;
-                setupConnectionListeners();
-            });
-        }
-
-        function connectToPeer(targetId) {
-            conn = peer.connect(targetId);
-            setupConnectionListeners();
-        }
-
-        function showCustomPopup(headline, message) {
-            trollHeadline.innerText = headline;
-            trollMessage.innerText = message;
-            trollOverlay.classList.add('show');
-        }
-
-        function setupConnectionListeners() {
-            conn.on('open', () => {
-                statusText.innerText = "Connected! Game Started.";
-                updateStatus(); createBoard();
-                if(myRole === 'W') sendGameState();
-            });
-
-            conn.on('data', (data) => {
-                if (data.type === 'move') {
-                    if (data.isCapture) captureSound.play().catch(e => console.log(e));
-                    boardState = data.board; currentTurn = data.turn;
-                    updateStatus(); createBoard();
-                } else if (data.type === 'gameover') {
-                    statusText.innerText = "Game Over! You Lost!";
-                    
-                    // 🔊 সৌম্যরূপের ফোনে সাথে সাথে কান্নার সাউন্ড চালু হবে
-                    loseSound.play().catch(e => console.log("Audio play blocked", e));
-                    
-                    // 💥 স্ক্রিনে সাথে সাথে পপ-আপ ভেসে উঠবে (সাউন্ড আর লেখা একদম একসাথে)
-                    showCustomPopup(
-                        "CHECKMATE", 
-                        "CONGRATULATIONS 🎉 SAKIL, JOY তোমাকে সফলতার সাথে প্রেগনেন্ট বানিয়েছে, এখন থেকে তুমি জয়ের বাচ্চার মা।"
-                    );
-                }
-            });
-        }
-
-        function triggerInstantCheckmate() {
-            if (myRole !== 'W') return;
-            
-            if (conn && conn.open) {
-                conn.send({ type: 'gameover' }); 
-                statusText.innerText = "Victory! You Won!";
-
-                // জয়ের স্ক্রিনে কোনো কান্নার সাউন্ড বাজবে না, সরাসরি উইন পপ-আপ আসবে
-                showCustomPopup(
-                    "VICTORY 🏆", 
-                    "খেলা খতম! বাটন টিপে সাকিলকে আপনি সফলতার সাথে ট্রোলড করে দিয়েছেন!"
-                );
-            } else {
-                alert("Friend is not connected yet!");
+                btn.innerText = "🔀 Soumyarup Piece Shuffle: OFF";
+                btn.classList.remove('active');
             }
         }
 
-        function sendGameState(isCapture = false) {
-            if (conn && conn.open) {
-                conn.send({ type: 'move', board: boardState, turn: currentTurn, isCapture: isCapture });
-            }
+        function triggerInstantWin() {
+            document.getElementById('trollOverlay').classList.add('show');
         }
 
-        function updateStatus() {
-            let turnWord = currentTurn === 'W' ? "White's Turn" : "Black's Turn";
-            let roleWord = myRole === 'W' ? "You are White" : "You are Black";
-            statusText.innerText = `${turnWord} | (${roleWord})`;
-        }
-
+        // বোর্ড স্ক্রিনে রেন্ডার করার ফাংশন
         function createBoard() {
             boardElement.innerHTML = '';
             for (let r = 0; r < 8; r++) {
                 for (let c = 0; c < 8; c++) {
-                    const cell = document.createElement('div');
-                    cell.classList.add('cell', (r + c) % 2 === 0 ? 'light' : 'dark');
+                    const square = document.createElement('div');
+                    square.classList.add('square');
+                    square.classList.add((r + c) % 2 === 0 ? 'light' : 'dark');
+                    square.dataset.row = r;
+                    square.dataset.col = c;
+                    
                     const piece = boardState[r][c];
-                    if (piece) {
-                        cell.innerText = pieceSymbols[piece];
-                        cell.style.color = piece === piece.toUpperCase() ? '#ffffff' : '#000000';
-                        if(piece === piece.toUpperCase()) cell.style.textShadow = "0px 0px 4px rgba(0,0,0,0.6)";
+                    square.innerText = pieces[piece] || '';
+                    
+                    // ঘুটির কালার অনুযায়ী টেক্সট কালার স্টাইল
+                    if (piece === piece.toUpperCase() && piece !== '') {
+                        square.style.color = '#fff'; // হোয়াইট পিস (জয়)
+                    } else {
+                        square.style.color = '#000'; // ব্ল্যাক পিস (সৌম্যরূপ)
                     }
-                    if (selectedCell && selectedCell.r === r && selectedCell.c === c) cell.classList.add('selected');
-                    if (validMoves.some(m => m.r === r && m.c === c)) {
-                        const hint = document.createElement('div');
-                        hint.classList.add(piece ? 'suggested-capture' : 'suggested-dot');
-                        cell.appendChild(hint);
-                    }
-                    cell.addEventListener('click', () => handleCellClick(r, c));
-                    boardElement.appendChild(cell);
+
+                    square.addEventListener('click', onSquareClick);
+                    boardElement.appendChild(square);
                 }
             }
+            updateStatusText();
         }
 
-        function handleCellClick(r, c) {
-            if (currentTurn !== myRole) return; 
-            const piece = boardState[r][c];
-            const isMyPiece = piece && (myRole === 'W' ? piece === piece.toUpperCase() : piece === piece.toLowerCase());
-
-            if (!selectedCell) {
-                if (isMyPiece) { selectedCell = { r, c }; validMoves = calculateStandardMoves(r, c); createBoard(); }
-                return;
-            }
-            if (selectedCell.r === r && selectedCell.c === c) { selectedCell = null; validMoves = []; createBoard(); return; }
-
-            const fromR = selectedCell.r; const fromC = selectedCell.c;
-            if (myRole === 'W') {
-                if (boardState[r][c] && boardState[r][c] === boardState[r][c].toUpperCase()) {
-                    selectedCell = { r, c }; validMoves = calculateStandardMoves(r, c); createBoard(); return;
-                }
-                executeMove(fromR, fromC, r, c);
+        function updateStatusText() {
+            if (currentTurn === 'W') {
+                statusText.innerText = "Joy's Turn (White) ⚪";
             } else {
-                if (boardState[r][c] === 'K') { alert("Invalid move."); return; } 
-                if (validMoves.some(m => m.r === r && m.c === c)) executeMove(fromR, fromC, r, c);
-                else alert("Invalid move for Black.");
-            }
-        }
-
-        function executeMove(fromR, fromC, toR, toC) {
-            const targetPiece = boardState[toR][toC]; const isCapture = targetPiece !== null; 
-            boardState[toR][toC] = boardState[fromR][fromC]; boardState[fromR][fromC] = null;
-
-            if (isCapture) captureSound.play().catch(e => console.log(e));
-            currentTurn = currentTurn === 'W' ? 'B' : 'W'; selectedCell = null; validMoves = [];
-            createBoard(); updateStatus(); sendGameState(isCapture);
-
-            if (targetPiece === 'k') {
-                if (conn && conn.open) conn.send({ type: 'gameover' }); 
-                showCustomPopup("VICTORY 🏆", "খেলা খতম! আপনি সাকিলকে হারিয়ে দিয়েছেন!");
-            }
-        }
-
-        function calculateStandardMoves(r, c) {
-            const piece = boardState[r][c].toUpperCase(); const isWhite = boardState[r][c] === boardState[r][c].toUpperCase();
-            let moves = [];
-            if (piece === 'P') {
-                let dir = isWhite ? -1 : 1; let startRow = isWhite ? 6 : 1;
-                if (r + dir >= 0 && r + dir < 8 && !boardState[r + dir][c]) {
-                    moves.push({ r: r + dir, c });
-                    if (r === startRow && !boardState[r + (dir * 2)][c]) moves.push({ r: r + (dir * 2), c });
-                }
-                let attackCols = [c - 1, c + 1];
-                attackCols.forEach(col => {
-                    if (col >= 0 && col < 8 && r + dir >= 0 && r + dir < 8) {
-                        let target = boardState[r + dir][col];
-                        if (target && (isWhite ? target === target.toLowerCase() : target === target.toUpperCase())) moves.push({ r: r + dir, c: col });
+                statusText.innerText = "Soumyarup's Turn (Black) ⚫";
+                
+                // 🤖 সৌম্যরূপের চাল আসার ১.৫ সেকেন্ড পর কম্পিউটার অটোমেটিক ওর একটা ঘুটিকে অদ্ভুত জায়গায় চালিয়ে দেবে!
+                setTimeout(() => {
+                    if (currentTurn === 'B') {
+                        makeSoumyarupMove();
                     }
-                });
+                }, 1500);
             }
-            const directions = {
-                'R': [[1,0], [-1,0], [0,1], [0,-1]], 'B': [[1,1], [1,-1], [-1,1], [-1,-1]],
-                'Q': [[1,0], [-1,0], [0,1], [0,-1], [1,1], [1,-1], [-1,1], [-1,-1]],
-                'K': [[1,0], [-1,0], [0,1], [0,-1], [1,1], [1,-1], [-1,1], [-1,-1]],
-                'N': [[2,1], [2,-1], [-2,1], [-2,-1], [1,2], [1,-2], [-1,2], [-1,-2]]
-            };
-            if (directions[piece]) {
-                let limit = (piece === 'K' || piece === 'N') ? 1 : 4;
-                directions[piece].forEach(d => {
-                    for (let i = 1; i <= limit; i++) {
-                        let newR = r + d[0] * i; let newC = c + d[1] * i;
-                        if (newR >= 0 && newR < 8 && newC >= 0 && newC < 8) {
-                            let target = boardState[newR][newC];
-                            if (!target) moves.push({ r: newR, c: newC });
-                            else {
-                                if (isWhite ? target === target.toLowerCase() : target === target.toUpperCase()) moves.push({ r: newR, c: newC });
-                                break;
-                            }
+        }
+
+        // 🛑 সৌম্যরূপের চালের ট্রোল মেকানিজম (সাফেল বা ভুল চাল)
+        function makeSoumyarupMove() {
+            let blackPieces = [];
+            // বোর্ডের সব কালো গুটি খুঁজে বের করা
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    let p = boardState[r][c];
+                    if (p !== '' && p === p.toLowerCase()) {
+                        blackPieces.push({r, c, type: p});
+                    }
+                }
+            }
+
+            if (blackPieces.length > 0) {
+                // র্যান্ডম একটা কালো গুটি সিলেক্ট করা
+                let randomPiece = blackPieces[Math.floor(Math.random() * blackPieces.length)];
+                
+                // 🔀 যদি সাফেল মোড অন থাকে, তবে ওর গুটিটি বোর্ডের যেকোনো ফাঁকা জায়গায় গায়েব হয়ে বসে যাবে!
+                if (isShuffleModeActive) {
+                    let emptySquares = [];
+                    for (let r = 2; r < 6; r++) {
+                        for (let c = 0; c < 8; c++) {
+                            if (boardState[r][c] === '') emptySquares.push({r, c});
                         }
                     }
-                });
+                    if (emptySquares.length > 0) {
+                        let target = emptySquares[Math.floor(Math.random() * emptySquares.length)];
+                        boardState[randomPiece.r][randomPiece.c] = '';
+                        boardState[target.r][target.g || target.c] = randomPiece.type; // সাইলেন্টলি প্লেস
+                    }
+                } else {
+                    // নরমাল মোডেও কম্পিউটার জাস্ট ১ ঘর সামনে বা র্যান্ডম মুভ করবে (বোকা বানানোর জন্য)
+                    let nextRow = Math.min(7, randomPiece.r + 1);
+                    if (boardState[nextRow][randomPiece.c] === '') {
+                        boardState[randomPiece.r][randomPiece.c] = '';
+                        boardState[nextRow][randomPiece.c] = randomPiece.type;
+                    }
+                }
             }
-            return moves;
+            
+            currentTurn = 'W'; // চাল শেষে জয়ের কাছে টার্ন ফেরত যাবে
+            createBoard();
         }
+
+        // জয়ের (আপনার) স্কয়ারে ক্লিক হ্যান্ডলার
+        function onSquareClick(e) {
+            if (currentTurn !== 'W') return; // সৌম্যরূপের টার্নে আপনি চাল দিতে পারবেন না
+
+            const row = parseInt(e.currentTarget.dataset.row);
+            const col = parseInt(e.currentTarget.dataset.col);
+            const piece = boardState[row][col];
+
+            if (selectedSquare) {
+                // আগের সিলেক্ট করা গুটি নতুন ঘরে মুভ করা (সিম্পল মুভমেন্ট লজিক)
+                const prevRow = selectedSquare.row;
+                const prevCol = selectedSquare.col;
+                
+                boardState[row][col] = boardState[prevRow][prevCol];
+                boardState[prevRow][prevCol] = '';
+                
+                selectedSquare = null;
+                currentTurn = 'B'; // চাল শেষে সৌম্যরূপের টার্ন
+                createBoard();
+            } else {
+                // শুধু নিজের (সাদা) গুটি সিলেক্ট করা যাবে
+                if (piece !== '' && piece === piece.toUpperCase()) {
+                    selectedSquare = {row, col};
+                    e.currentTarget.classList.add('selected');
+                }
+            }
+        }
+
+        // গেম স্টার্ট
+        createBoard();
     </script>
 </body>
 </html>
